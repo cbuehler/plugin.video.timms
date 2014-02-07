@@ -37,7 +37,7 @@ class ListParser(HTMLParser.HTMLParser):
 			pass
 
 pluginurl = urlparse.urlparse(sys.argv[0])
-addon = xbmcaddon.Addon(id=pluginurl.netloc)
+addon = xbmcaddon.Addon()
 profile = addon.getAddonInfo("profile")
 profilepath = xbmc.translatePath(profile)
 cookiefilename = os.path.join(profilepath, "cookies.txt")
