@@ -15,18 +15,24 @@ import xbmcvfs
 class ListParser(HTMLParser.HTMLParser):
 	addvideos = False
 	gettitle = False
-	label = None
 	nodepath = None
 	isFolder = True
+	thumbnailImage = None
+	listitem = xbmcgui.ListItem()
 
 	def handle_starttag(self, tag, attrs):
 		try:
 			attrs = dict(attrs)
+			try:
+				self.thumbnailImage = attrs['src']
+			except KeyError:
+				pass
 			href = attrs['href']
 			if self.addvideos and 'class' in attrs and attrs['class'] == 'uniblue':
 				self.nodepath = href.rpartition('/')[2]
 				self.isFolder = False
 				self.gettitle = True
+				self.listitem.setThumbnailImage(self.thumbnailImage)
 			else:
 				query = urlparse.parse_qs(urlparse.urlparse(href).query)
 				self.nodepath = query['nodepath'][0].encode('latin')
@@ -34,22 +40,21 @@ class ListParser(HTMLParser.HTMLParser):
 				self.isFolder = True
 				label = self.nodepath.partition(pluginurl.path)[2].strip('/')
 				if label != "" and "/" not in label:
-					self.label = label
+					self.listitem.setLabel(label)
 		except (IndexError, KeyError):
 			pass
 
 	def handle_endtag(self, tag):
-		if not self.label:
+		if not self.listitem.getLabel():
 			return
 		url = urlparse.urlunparse((pluginurl.scheme, pluginurl.netloc, self.nodepath, "", "", ""))
-		listitem = xbmcgui.ListItem(self.label)
-		xbmcplugin.addDirectoryItem(addon_handle, url, listitem, self.isFolder)
-		self.label = None
+		xbmcplugin.addDirectoryItem(addon_handle, url, self.listitem, self.isFolder)
+		self.listitem = xbmcgui.ListItem()
 
 	def handle_data(self, data):
 		if not self.gettitle:
 			return
-		self.label = data
+		self.listitem.setLabel(data)
 		self.gettitle = False
 
 pluginurl = urlparse.urlparse(sys.argv[0])
