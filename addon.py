@@ -50,12 +50,23 @@ class ListParser(HTMLParser.HTMLParser):
 		url = urlparse.urlunparse((pluginurl.scheme, pluginurl.netloc, self.nodepath, "", "", ""))
 		xbmcplugin.addDirectoryItem(addon_handle, url, self.listitem, self.isFolder)
 		self.listitem = xbmcgui.ListItem()
+		self.gettitle = False
+
+	def addtolabel(self, data):
+		label = self.listitem.getLabel()
+		label += data
+		self.listitem.setLabel(label)
 
 	def handle_data(self, data):
 		if not self.gettitle:
 			return
-		self.listitem.setLabel(data)
-		self.gettitle = False
+		self.addtolabel(data)
+
+	def handle_charref(self, name):
+		if not self.gettitle:
+			return
+		c = unichr(int(name))
+		self.addtolabel(c)
 
 pluginurl = urlparse.urlparse(sys.argv[0])
 addon = xbmcaddon.Addon()
