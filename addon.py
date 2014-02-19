@@ -65,7 +65,7 @@ class ListParser(HTMLParser.HTMLParser):
 	def handle_charref(self, name):
 		if not self.gettitle:
 			return
-		c = unichr(int(name))
+		c = unichr(int(name)).encode('utf-8')
 		self.addtolabel(c)
 
 pluginurl = urlparse.urlparse(sys.argv[0])
