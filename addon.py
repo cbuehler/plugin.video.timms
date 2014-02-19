@@ -14,27 +14,43 @@ import xbmcvfs
 
 class ListParser(HTMLParser.HTMLParser):
 	addvideos = False
+	gettitle = False
+	label = None
+	nodepath = None
+	isFolder = True
+
 	def handle_starttag(self, tag, attrs):
 		try:
 			attrs = dict(attrs)
 			href = attrs['href']
 			if self.addvideos and 'class' in attrs and attrs['class'] == 'uniblue':
-				nodepath = href.rpartition('/')[2]
-				label = nodepath
-				isFolder = False
+				self.nodepath = href.rpartition('/')[2]
+				self.isFolder = False
+				self.gettitle = True
 			else:
 				query = urlparse.parse_qs(urlparse.urlparse(href).query)
-				nodepath = query['nodepath'][0].encode('latin')
-				self.addvideos = nodepath == pluginurl.path
-				label = nodepath.partition(pluginurl.path)[2].strip('/')
-				isFolder = True
-				if label == "" or "/" in label:
-					return
-			url = urlparse.urlunparse((pluginurl.scheme, pluginurl.netloc, nodepath, "", "", ""))
-			listitem = xbmcgui.ListItem(label)
-			xbmcplugin.addDirectoryItem(addon_handle, url, listitem, isFolder)
+				self.nodepath = query['nodepath'][0].encode('latin')
+				self.addvideos = self.nodepath == pluginurl.path
+				self.isFolder = True
+				label = self.nodepath.partition(pluginurl.path)[2].strip('/')
+				if label != "" and "/" not in label:
+					self.label = label
 		except (IndexError, KeyError):
 			pass
+
+	def handle_endtag(self, tag):
+		if not self.label:
+			return
+		url = urlparse.urlunparse((pluginurl.scheme, pluginurl.netloc, self.nodepath, "", "", ""))
+		listitem = xbmcgui.ListItem(self.label)
+		xbmcplugin.addDirectoryItem(addon_handle, url, listitem, self.isFolder)
+		self.label = None
+
+	def handle_data(self, data):
+		if not self.gettitle:
+			return
+		self.label = data
+		self.gettitle = False
 
 pluginurl = urlparse.urlparse(sys.argv[0])
 addon = xbmcaddon.Addon()
